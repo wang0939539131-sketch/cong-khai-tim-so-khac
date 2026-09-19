@@ -1,0 +1,152 @@
+{
+  "version": 6,
+  "generator": "qd-audience-v6",
+  "used_thumbnail_signatures": [
+    "40275fa67f1675dfad428a93",
+    "6c4fa0764c07cf8b60b601a6",
+    "df6a93f7f5155a7ba0fd96da"
+  ],
+  "used_palette_signatures": [
+    "2f12bfad96b33b2c12e1",
+    "bab983999010e2fe683d",
+    "e02ed3d04178985b232b"
+  ],
+  "used_thumbnails": [
+    {
+      "signature": "40275fa67f1675dfad428a93",
+      "video_sequence": 2,
+      "puzzle_signature": "7ee9f4c6529756fad359479d",
+      "grammar": "alternating",
+      "mutation": "double_substitute",
+      "layout": 2,
+      "headline": 4,
+      "score": 1.0,
+      "audience_predicted": 0.5,
+      "audience_exploration": 1.0,
+      "audience_evidence": 0.0,
+      "v6_score": 0.9764
+    },
+    {
+      "signature": "6c4fa0764c07cf8b60b601a6",
+      "video_sequence": 3,
+      "puzzle_signature": "e8f37ef8240720817e12ef2c",
+      "grammar": "sandwich",
+      "mutation": "confusable_substitute+confusable_substitute+substitute",
+      "layout": 0,
+      "headline": 0,
+      "score": 0.80616,
+      "audience_predicted": 0.5,
+      "audience_exploration": 1.0,
+      "audience_evidence": 0.0,
+      "v6_score": 0.80625
+    },
+    {
+      "signature": "df6a93f7f5155a7ba0fd96da",
+      "video_sequence": 4,
+      "puzzle_signature": "86b57e8f49e1196354cf031a",
+      "grammar": "palindrome",
+      "mutation": "mirror_break+substitute+mirror_break",
+      "layout": 3,
+      "headline": 3,
+      "score": 0.741,
+      "audience_predicted": 0.5,
+      "audience_exploration": 1.0,
+      "audience_evidence": 0.0,
+      "v6_score": 0.74905
+    }
+  ],
+  "used_palettes": [
+    {
+      "signature": "bab983999010e2fe683d",
+      "video_sequence": 2,
+      "bg1": [
+        71,
+        72,
+        244
+      ],
+      "bg2": [
+        238,
+        31,
+        216
+      ],
+      "accent": [
+        242,
+        240,
+        62
+      ],
+      "novelty": 1.0
+    },
+    {
+      "signature": "e02ed3d04178985b232b",
+      "video_sequence": 3,
+      "bg1": [
+        29,
+        241,
+        44
+      ],
+      "bg2": [
+        72,
+        194,
+        121
+      ],
+      "accent": [
+        242,
+        57,
+        229
+      ],
+      "novelty": 0.62519
+    },
+    {
+      "signature": "2f12bfad96b33b2c12e1",
+      "video_sequence": 4,
+      "bg1": [
+        225,
+        16,
+        85
+      ],
+      "bg2": [
+        179,
+        182,
+        38
+      ],
+      "accent": [
+        28,
+        238,
+        167
+      ],
+      "novelty": 0.49239
+    }
+  ],
+  "recent_profiles": [
+    {
+      "video_sequence": 2,
+      "layout": 2,
+      "headline": 4,
+      "palette_signature": "bab983999010e2fe683d"
+    },
+    {
+      "video_sequence": 3,
+      "layout": 0,
+      "headline": 0,
+      "palette_signature": "e02ed3d04178985b232b"
+    },
+    {
+      "video_sequence": 4,
+      "layout": 3,
+      "headline": 3,
+      "palette_signature": "2f12bfad96b33b2c12e1"
+    }
+  ],
+  "last_video_sequence": 4,
+  "total_unique_thumbnails": 3,
+  "audience_model": {
+    "model": "audience-learning-v6",
+    "version": 6,
+    "learned_videos": 0,
+    "tracked_videos": 2,
+    "feature_count": 0,
+    "thumbnail_feature_count": 0,
+    "global_reward_mean": 0.5,
+    "global_evidence": 0.0
+  }
+}
