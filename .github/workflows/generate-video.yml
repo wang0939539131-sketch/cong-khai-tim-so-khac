@@ -28,7 +28,7 @@ jobs:
       # Điều khiển thứ tự run / tiêu đề.
       # Run có số SEQ_BASE_RUN được tính là sequence 0.
       # TITLE_START là số dòng (bắt đầu từ 1) trong tieude.txt dùng cho sequence 0.
-      SEQ_BASE_RUN: "1"
+      SEQ_BASE_RUN: "2"
       TITLE_START: "1"
 
       QUIZ_WIDTH: "1920"
