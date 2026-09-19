@@ -316,8 +316,8 @@ jobs:
               raise SystemExit("Missing YouTube secrets: " + ", ".join(missing))
 
           privacy = os.getenv("YT_PRIVACY_STATUS", "private").strip().lower()
-          if privacy != "private":
-              raise SystemExit("YT_PRIVACY_STATUS must remain 'private'")
+          if privacy not in ("private", "public", "unlisted"):
+              raise SystemExit(f"Invalid YT_PRIVACY_STATUS: {privacy}")
 
           creds = Credentials(
               token=None,
