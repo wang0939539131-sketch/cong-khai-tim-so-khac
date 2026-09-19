@@ -16,7 +16,7 @@ jobs:
     timeout-minutes: 240
 
     env:
-      PRIVATE_REPO: "harariyvdnlnragnzjp16026-blip/rieng-tu-tim-so-khac-biet"
+      PRIVATE_REPO: "wang0939539131-sketch/rieng-tu-tim-so-khac"
       PRIVATE_REF: "main"
       PUBLIC_REF: "main"
       PYTHONUNBUFFERED: "1"
