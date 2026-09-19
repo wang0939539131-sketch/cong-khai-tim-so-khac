@@ -42,10 +42,13 @@ jobs:
       QUIZ_THUMB_HISTORY_FILE: "../control/thumb_history.json"
       QUIZ_AUDIENCE_HISTORY_FILE: "../control/audience_learning.json"
 
+      # YouTube privacy status: public / private / unlisted
       YT_PRIVACY_STATUS: "public"
+
       YT_CLIENT_ID: ${{ secrets.YT_CLIENT_ID }}
       YT_CLIENT_SECRET: ${{ secrets.YT_CLIENT_SECRET }}
       YT_REFRESH_TOKEN: ${{ secrets.YT_REFRESH_TOKEN }}
+
       # Optional: token granted yt-analytics.readonly + youtube.readonly.
       # If absent, v6 safely stays in cold-start/exploration mode.
       YT_ANALYTICS_REFRESH_TOKEN: ${{ secrets.YT_ANALYTICS_REFRESH_TOKEN }}
@@ -99,6 +102,7 @@ jobs:
             echo "::error::QUIZ_GAME_COUNT must be from 1 to 40; got: $QUIZ_GAME_COUNT"
             exit 1
           fi
+
           for value_name in QUIZ_SEED_BASE SEQ_BASE_RUN TITLE_START; do
             value="${!value_name}"
             if ! [[ "$value" =~ ^-?[0-9]+$ ]]; then
@@ -106,6 +110,7 @@ jobs:
               exit 1
             fi
           done
+
           if [ "$TITLE_START" -lt 1 ]; then
             echo "::error::TITLE_START must be >= 1"
             exit 1
@@ -149,6 +154,7 @@ jobs:
           python - <<'PYCODE'
           import json
           from pathlib import Path
+
           for name in (
               "../control/game_history.json",
               "../control/thumb_history.json",
@@ -181,6 +187,7 @@ jobs:
               ]
 
           titles = meaningful_lines("tieude.txt")
+
           if not titles:
               raise SystemExit("tieude.txt has no usable titles")
 
@@ -190,8 +197,10 @@ jobs:
 
           selected = None
           selected_index = None
+
           for offset in range(len(titles)):
               idx = (preferred + offset) % len(titles)
+
               if titles[idx] not in used:
                   selected = titles[idx]
                   selected_index = idx
@@ -203,11 +212,18 @@ jobs:
               print("::warning::All titles have already been used; reusing cyclically.")
 
           description = Path("mota.txt").read_text(encoding="utf-8").strip()
-          description = description.replace("{game_count}", os.environ["QUIZ_GAME_COUNT"])
-          description = description.replace("{sequence}", str(sequence + 1))
+          description = description.replace(
+              "{game_count}",
+              os.environ["QUIZ_GAME_COUNT"]
+          )
+          description = description.replace(
+              "{sequence}",
+              str(sequence + 1)
+          )
 
           out = Path("../private-source/dist")
           out.mkdir(parents=True, exist_ok=True)
+
           (out / "upload_meta.json").write_text(
               json.dumps(
                   {
@@ -231,7 +247,10 @@ jobs:
               env_file.write(selected + "\n")
               env_file.write("__TITLE__\n")
 
-          print(f"Run #{run_no} -> sequence {sequence}, seed {seed}, title line {selected_index + 1}")
+          print(
+              f"Run #{run_no} -> sequence {sequence}, "
+              f"seed {seed}, title line {selected_index + 1}"
+          )
           print(f"Selected title: {selected}")
           PYCODE
 
@@ -257,29 +276,78 @@ jobs:
         working-directory: private-source
         run: |
           shopt -s nullglob
+
           videos=(dist/*.mp4)
+
           if [ "${#videos[@]}" -ne 1 ]; then
             echo "::error::Expected exactly one MP4 in dist/, found ${#videos[@]}"
             ls -lah dist/ || true
             exit 1
           fi
-          test -s dist/thumbnail.jpg || { echo "::error::Missing thumbnail"; exit 1; }
-          test -s dist/upload_meta.json || { echo "::error::Missing upload metadata"; exit 1; }
+
+          test -s dist/thumbnail.jpg || {
+            echo "::error::Missing thumbnail"
+            exit 1
+          }
+
+          test -s dist/upload_meta.json || {
+            echo "::error::Missing upload metadata"
+            exit 1
+          }
+
           ffprobe -v error \
             -show_entries format=duration,size \
             -show_entries stream=codec_name,width,height,r_frame_rate \
             -of json "${videos[0]}"
+
           python - <<'PYCODE'
           import json
           from pathlib import Path
           from audience_learning import model_summary
-          gh = json.loads(Path("../control/game_history.json").read_text(encoding="utf-8"))
-          th = json.loads(Path("../control/thumb_history.json").read_text(encoding="utf-8"))
-          print("Generator:", gh.get("generator"), "version", gh.get("version"))
-          print("Unique games:", gh.get("total_unique_games", len(gh.get("used_game_signatures", []))))
-          print("Unique thumbnails:", th.get("total_unique_thumbnails", len(th.get("used_thumbnail_signatures", []))))
-          print("Audience model:", model_summary(Path("../control/audience_learning.json")))
+
+          gh = json.loads(
+              Path("../control/game_history.json").read_text(
+                  encoding="utf-8"
+              )
+          )
+
+          th = json.loads(
+              Path("../control/thumb_history.json").read_text(
+                  encoding="utf-8"
+              )
+          )
+
+          print(
+              "Generator:",
+              gh.get("generator"),
+              "version",
+              gh.get("version")
+          )
+
+          print(
+              "Unique games:",
+              gh.get(
+                  "total_unique_games",
+                  len(gh.get("used_game_signatures", []))
+              )
+          )
+
+          print(
+              "Unique thumbnails:",
+              th.get(
+                  "total_unique_thumbnails",
+                  len(th.get("used_thumbnail_signatures", []))
+              )
+          )
+
+          print(
+              "Audience model:",
+              model_summary(
+                  Path("../control/audience_learning.json")
+              )
+          )
           PYCODE
+
           ls -lh dist/thumbnail.jpg dist/upload_meta.json
 
       - name: Upload video, title, description and thumbnail to YouTube
@@ -298,26 +366,62 @@ jobs:
           from audience_learning import attach_video_id, model_summary
 
           videos = sorted(glob.glob("dist/*.mp4"))
+
           if len(videos) != 1:
-              raise SystemExit(f"Expected exactly one rendered MP4, found {len(videos)}")
+              raise SystemExit(
+                  f"Expected exactly one rendered MP4, found {len(videos)}"
+              )
 
           thumb = Path("dist/thumbnail.jpg")
-          meta = json.loads(Path("dist/upload_meta.json").read_text(encoding="utf-8"))
+
+          meta = json.loads(
+              Path("dist/upload_meta.json").read_text(
+                  encoding="utf-8"
+              )
+          )
+
           title = str(meta["title"]).strip()[:100]
           description = str(meta["description"]).strip()
+
           if not title:
               raise SystemExit("Selected YouTube title is empty")
+
           if not thumb.is_file():
               raise SystemExit("Missing dist/thumbnail.jpg")
 
-          required = ("YT_CLIENT_ID", "YT_CLIENT_SECRET", "YT_REFRESH_TOKEN")
-          missing = [name for name in required if not os.getenv(name, "").strip()]
-          if missing:
-              raise SystemExit("Missing YouTube secrets: " + ", ".join(missing))
+          required = (
+              "YT_CLIENT_ID",
+              "YT_CLIENT_SECRET",
+              "YT_REFRESH_TOKEN",
+          )
 
-          privacy = os.getenv("YT_PRIVACY_STATUS", "private").strip().lower()
-          if privacy not in ("private", "public", "unlisted"):
-              raise SystemExit(f"Invalid YT_PRIVACY_STATUS: {privacy}")
+          missing = [
+              name
+              for name in required
+              if not os.getenv(name, "").strip()
+          ]
+
+          if missing:
+              raise SystemExit(
+                  "Missing YouTube secrets: " + ", ".join(missing)
+              )
+
+          # Read privacy status from workflow environment.
+          privacy = os.getenv(
+              "YT_PRIVACY_STATUS",
+              "private"
+          ).strip().lower()
+
+          if privacy not in (
+              "private",
+              "public",
+              "unlisted",
+          ):
+              raise SystemExit(
+                  f"Invalid YT_PRIVACY_STATUS: {privacy}"
+              )
+
+          print(f"YouTube privacy status: {privacy}")
 
           creds = Credentials(
               token=None,
@@ -325,10 +429,19 @@ jobs:
               token_uri="https://oauth2.googleapis.com/token",
               client_id=os.environ["YT_CLIENT_ID"].strip(),
               client_secret=os.environ["YT_CLIENT_SECRET"].strip(),
-              scopes=["https://www.googleapis.com/auth/youtube.upload"],
+              scopes=[
+                  "https://www.googleapis.com/auth/youtube.upload"
+              ],
           )
+
           creds.refresh(Request())
-          youtube = build("youtube", "v3", credentials=creds, cache_discovery=False)
+
+          youtube = build(
+              "youtube",
+              "v3",
+              credentials=creds,
+              cache_discovery=False,
+          )
 
           request = youtube.videos().insert(
               part="snippet,status",
@@ -340,8 +453,14 @@ jobs:
                       "defaultLanguage": "ja",
                       "defaultAudioLanguage": "ja",
                   },
-                  "status": {"privacyStatus": "private"},
+
+                  # IMPORTANT:
+                  # Use the workflow variable instead of hard-coding "private".
+                  "status": {
+                      "privacyStatus": privacy
+                  },
               },
+
               media_body=MediaFileUpload(
                   videos[0],
                   mimetype="video/mp4",
@@ -351,27 +470,59 @@ jobs:
           )
 
           response = None
+
           while response is None:
               status, response = request.next_chunk()
+
               if status is not None:
-                  print(f"YouTube upload: {status.progress() * 100:.1f}%")
+                  print(
+                      f"YouTube upload: "
+                      f"{status.progress() * 100:.1f}%"
+                  )
 
           video_id = response.get("id")
+
           if not video_id:
-              raise SystemExit(f"YouTube API returned no video id: {response}")
+              raise SystemExit(
+                  f"YouTube API returned no video id: {response}"
+              )
 
           youtube.thumbnails().set(
               videoId=video_id,
-              media_body=MediaFileUpload(str(thumb), mimetype="image/jpeg", resumable=False),
+              media_body=MediaFileUpload(
+                  str(thumb),
+                  mimetype="image/jpeg",
+                  resumable=False,
+              ),
           ).execute()
 
-          Path("dist/youtube_video_id.txt").write_text(video_id + "\n", encoding="utf-8")
-          audience_path = Path(os.environ["QUIZ_AUDIENCE_HISTORY_FILE"])
-          attach_video_id(audience_path, int(os.environ["QUIZ_SEQUENCE"]), video_id)
-          print(f"Uploaded PRIVATE YouTube video id: {video_id}")
+          Path("dist/youtube_video_id.txt").write_text(
+              video_id + "\n",
+              encoding="utf-8"
+          )
+
+          audience_path = Path(
+              os.environ["QUIZ_AUDIENCE_HISTORY_FILE"]
+          )
+
+          attach_video_id(
+              audience_path,
+              int(os.environ["QUIZ_SEQUENCE"]),
+              video_id
+          )
+
+          print(
+              f"Uploaded {privacy.upper()} YouTube video id: "
+              f"{video_id}"
+          )
+
           print(f"Title: {title}")
           print("Custom thumbnail uploaded successfully.")
-          print("Audience v6 tracking:", model_summary(audience_path))
+          print(
+              "Audience v6 tracking:",
+              model_summary(audience_path)
+          )
+
           PYCODE
 
       - name: Record used title, games, thumbnail and audience-learning state
@@ -388,18 +539,27 @@ jobs:
             printf '%s\n' "$SELECTED_TITLE" >> tieudedalay.txt
           fi
 
-          git add tieudedalay.txt game_history.json thumb_history.json audience_learning.json
+          git add \
+            tieudedalay.txt \
+            game_history.json \
+            thumb_history.json \
+            audience_learning.json
+
           if git diff --cached --quiet; then
             echo "No title/history/learning changes to commit."
           else
             git commit -m "Track v6 title, novelty and audience learning"
+
             for attempt in 1 2 3; do
               if git push origin "HEAD:${PUBLIC_REF}"; then
                 exit 0
               fi
+
               echo "Push attempt $attempt failed; rebasing and retrying..."
+
               git pull --rebase --autostash origin "$PUBLIC_REF"
             done
+
             echo "::error::Could not persist v6 title/history/learning state after 3 attempts"
             exit 1
           fi
