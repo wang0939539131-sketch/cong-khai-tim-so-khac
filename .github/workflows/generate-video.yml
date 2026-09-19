@@ -1,0 +1,411 @@
+name: Generate TIM-SO-KHAC video and upload to YouTube
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: tim-so-khac-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  generate-and-upload:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+
+    env:
+      PRIVATE_REPO: "harariyvdnlnragnzjp16026-blip/rieng-tu-tim-so-khac-biet"
+      PRIVATE_REF: "main"
+      PUBLIC_REF: "main"
+      PYTHONUNBUFFERED: "1"
+
+      # Hai giá trị trước đây là workflow inputs. Muốn đổi thì sửa trực tiếp tại đây.
+      QUIZ_GAME_COUNT: "40"
+      QUIZ_SEED_BASE: "20260917"
+
+      # Điều khiển thứ tự run / tiêu đề.
+      # Run có số SEQ_BASE_RUN được tính là sequence 0.
+      # TITLE_START là số dòng (bắt đầu từ 1) trong tieude.txt dùng cho sequence 0.
+      SEQ_BASE_RUN: "1"
+      TITLE_START: "1"
+
+      QUIZ_WIDTH: "1920"
+      QUIZ_HEIGHT: "1080"
+      QUIZ_FPS: "60"
+      QUIZ_OUTPUT_DIR: "dist"
+      QUIZ_WORK_DIR: "work"
+
+      # Persistent creativity / anti-repeat / audience-learning state in public control repo.
+      QUIZ_GAME_HISTORY_FILE: "../control/game_history.json"
+      QUIZ_THUMB_HISTORY_FILE: "../control/thumb_history.json"
+      QUIZ_AUDIENCE_HISTORY_FILE: "../control/audience_learning.json"
+
+      YT_PRIVACY_STATUS: "public"
+      YT_CLIENT_ID: ${{ secrets.YT_CLIENT_ID }}
+      YT_CLIENT_SECRET: ${{ secrets.YT_CLIENT_SECRET }}
+      YT_REFRESH_TOKEN: ${{ secrets.YT_REFRESH_TOKEN }}
+      # Optional: token granted yt-analytics.readonly + youtube.readonly.
+      # If absent, v6 safely stays in cold-start/exploration mode.
+      YT_ANALYTICS_REFRESH_TOKEN: ${{ secrets.YT_ANALYTICS_REFRESH_TOKEN }}
+
+    steps:
+      - name: Check required secrets
+        env:
+          PRIVATE_REPO_TOKEN: ${{ secrets.PRIVATE_REPO_TOKEN }}
+        run: |
+          missing=0
+          for name in PRIVATE_REPO_TOKEN YT_CLIENT_ID YT_CLIENT_SECRET YT_REFRESH_TOKEN; do
+            value="${!name:-}"
+            if [ -z "$value" ]; then
+              echo "::error::Missing Actions secret: $name"
+              missing=1
+            fi
+          done
+          if [ "$missing" -ne 0 ]; then
+            exit 1
+          fi
+
+      - name: Checkout public control repo
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.PUBLIC_REF }}
+          path: control
+          fetch-depth: 1
+          persist-credentials: true
+
+      - name: Checkout private TIM-SO-KHAC source
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ env.PRIVATE_REPO }}
+          ref: ${{ env.PRIVATE_REF }}
+          token: ${{ secrets.PRIVATE_REPO_TOKEN }}
+          path: private-source
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: private-source/requirements.txt
+
+      - name: Validate configuration and source
+        working-directory: private-source
+        run: |
+          if ! [[ "$QUIZ_GAME_COUNT" =~ ^([1-9]|[1-3][0-9]|40)$ ]]; then
+            echo "::error::QUIZ_GAME_COUNT must be from 1 to 40; got: $QUIZ_GAME_COUNT"
+            exit 1
+          fi
+          for value_name in QUIZ_SEED_BASE SEQ_BASE_RUN TITLE_START; do
+            value="${!value_name}"
+            if ! [[ "$value" =~ ^-?[0-9]+$ ]]; then
+              echo "::error::$value_name must be an integer; got: $value"
+              exit 1
+            fi
+          done
+          if [ "$TITLE_START" -lt 1 ]; then
+            echo "::error::TITLE_START must be >= 1"
+            exit 1
+          fi
+
+          for file in \
+            generate_quiz_jp.py \
+            generate_quiz_v6.py \
+            puzzle_generator.py \
+            puzzle_generator_v6.py \
+            audience_learning.py \
+            refresh_audience_metrics.py \
+            requirements.txt; do
+            if [ ! -f "$file" ]; then
+              echo "::error::Missing private source file: $file"
+              exit 1
+            fi
+          done
+
+          for file in \
+            ../control/tieude.txt \
+            ../control/mota.txt \
+            ../control/tieudedalay.txt \
+            ../control/game_history.json \
+            ../control/thumb_history.json \
+            ../control/audience_learning.json; do
+            if [ ! -f "$file" ]; then
+              echo "::error::Missing public control file: $file"
+              exit 1
+            fi
+          done
+
+          python -m py_compile \
+            generate_quiz_jp.py \
+            generate_quiz_v6.py \
+            puzzle_generator.py \
+            puzzle_generator_v6.py \
+            audience_learning.py \
+            refresh_audience_metrics.py
+
+          python - <<'PYCODE'
+          import json
+          from pathlib import Path
+          for name in (
+              "../control/game_history.json",
+              "../control/thumb_history.json",
+              "../control/audience_learning.json",
+          ):
+              json.loads(Path(name).read_text(encoding="utf-8"))
+              print("Valid state:", name)
+          PYCODE
+
+      - name: Resolve run sequence, seed, title and description
+        working-directory: control
+        env:
+          CURRENT_RUN: ${{ github.run_number }}
+        run: |
+          python - <<'PYCODE'
+          import json
+          import os
+          from pathlib import Path
+
+          run_no = int(os.environ["CURRENT_RUN"])
+          base_run = int(os.environ["SEQ_BASE_RUN"])
+          sequence = max(0, run_no - base_run)
+          seed = int(os.environ["QUIZ_SEED_BASE"]) + sequence
+
+          def meaningful_lines(path):
+              return [
+                  line.strip()
+                  for line in Path(path).read_text(encoding="utf-8").splitlines()
+                  if line.strip() and not line.lstrip().startswith("#")
+              ]
+
+          titles = meaningful_lines("tieude.txt")
+          if not titles:
+              raise SystemExit("tieude.txt has no usable titles")
+
+          used = set(meaningful_lines("tieudedalay.txt"))
+          start = (int(os.environ["TITLE_START"]) - 1) % len(titles)
+          preferred = (start + sequence) % len(titles)
+
+          selected = None
+          selected_index = None
+          for offset in range(len(titles)):
+              idx = (preferred + offset) % len(titles)
+              if titles[idx] not in used:
+                  selected = titles[idx]
+                  selected_index = idx
+                  break
+
+          if selected is None:
+              selected_index = preferred
+              selected = titles[selected_index]
+              print("::warning::All titles have already been used; reusing cyclically.")
+
+          description = Path("mota.txt").read_text(encoding="utf-8").strip()
+          description = description.replace("{game_count}", os.environ["QUIZ_GAME_COUNT"])
+          description = description.replace("{sequence}", str(sequence + 1))
+
+          out = Path("../private-source/dist")
+          out.mkdir(parents=True, exist_ok=True)
+          (out / "upload_meta.json").write_text(
+              json.dumps(
+                  {
+                      "title": selected[:100],
+                      "description": description,
+                      "title_line": selected_index + 1,
+                      "sequence": sequence,
+                      "seed": seed,
+                  },
+                  ensure_ascii=False,
+                  indent=2,
+              ),
+              encoding="utf-8",
+          )
+
+          with open(os.environ["GITHUB_ENV"], "a", encoding="utf-8") as env_file:
+              env_file.write(f"QUIZ_SEED={seed}\n")
+              env_file.write(f"QUIZ_SEQUENCE={sequence}\n")
+              env_file.write(f"SELECTED_TITLE_LINE={selected_index + 1}\n")
+              env_file.write("SELECTED_TITLE<<__TITLE__\n")
+              env_file.write(selected + "\n")
+              env_file.write("__TITLE__\n")
+
+          print(f"Run #{run_no} -> sequence {sequence}, seed {seed}, title line {selected_index + 1}")
+          print(f"Selected title: {selected}")
+          PYCODE
+
+      - name: Install runtime
+        working-directory: private-source
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends ffmpeg fonts-noto-cjk
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+          python -m pip install google-api-python-client google-auth google-auth-httplib2
+
+      - name: Refresh Audience-Learning v6 from YouTube Analytics
+        working-directory: private-source
+        continue-on-error: true
+        run: python refresh_audience_metrics.py
+
+      - name: Generate v6 quality-diversity video and thumbnail
+        working-directory: private-source
+        run: python generate_quiz_v6.py
+
+      - name: Verify rendered assets and learning state
+        working-directory: private-source
+        run: |
+          shopt -s nullglob
+          videos=(dist/*.mp4)
+          if [ "${#videos[@]}" -ne 1 ]; then
+            echo "::error::Expected exactly one MP4 in dist/, found ${#videos[@]}"
+            ls -lah dist/ || true
+            exit 1
+          fi
+          test -s dist/thumbnail.jpg || { echo "::error::Missing thumbnail"; exit 1; }
+          test -s dist/upload_meta.json || { echo "::error::Missing upload metadata"; exit 1; }
+          ffprobe -v error \
+            -show_entries format=duration,size \
+            -show_entries stream=codec_name,width,height,r_frame_rate \
+            -of json "${videos[0]}"
+          python - <<'PYCODE'
+          import json
+          from pathlib import Path
+          from audience_learning import model_summary
+          gh = json.loads(Path("../control/game_history.json").read_text(encoding="utf-8"))
+          th = json.loads(Path("../control/thumb_history.json").read_text(encoding="utf-8"))
+          print("Generator:", gh.get("generator"), "version", gh.get("version"))
+          print("Unique games:", gh.get("total_unique_games", len(gh.get("used_game_signatures", []))))
+          print("Unique thumbnails:", th.get("total_unique_thumbnails", len(th.get("used_thumbnail_signatures", []))))
+          print("Audience model:", model_summary(Path("../control/audience_learning.json")))
+          PYCODE
+          ls -lh dist/thumbnail.jpg dist/upload_meta.json
+
+      - name: Upload video, title, description and thumbnail to YouTube
+        working-directory: private-source
+        run: |
+          python - <<'PYCODE'
+          import glob
+          import json
+          import os
+          from pathlib import Path
+
+          from google.auth.transport.requests import Request
+          from google.oauth2.credentials import Credentials
+          from googleapiclient.discovery import build
+          from googleapiclient.http import MediaFileUpload
+          from audience_learning import attach_video_id, model_summary
+
+          videos = sorted(glob.glob("dist/*.mp4"))
+          if len(videos) != 1:
+              raise SystemExit(f"Expected exactly one rendered MP4, found {len(videos)}")
+
+          thumb = Path("dist/thumbnail.jpg")
+          meta = json.loads(Path("dist/upload_meta.json").read_text(encoding="utf-8"))
+          title = str(meta["title"]).strip()[:100]
+          description = str(meta["description"]).strip()
+          if not title:
+              raise SystemExit("Selected YouTube title is empty")
+          if not thumb.is_file():
+              raise SystemExit("Missing dist/thumbnail.jpg")
+
+          required = ("YT_CLIENT_ID", "YT_CLIENT_SECRET", "YT_REFRESH_TOKEN")
+          missing = [name for name in required if not os.getenv(name, "").strip()]
+          if missing:
+              raise SystemExit("Missing YouTube secrets: " + ", ".join(missing))
+
+          privacy = os.getenv("YT_PRIVACY_STATUS", "private").strip().lower()
+          if privacy != "private":
+              raise SystemExit("YT_PRIVACY_STATUS must remain 'private'")
+
+          creds = Credentials(
+              token=None,
+              refresh_token=os.environ["YT_REFRESH_TOKEN"].strip(),
+              token_uri="https://oauth2.googleapis.com/token",
+              client_id=os.environ["YT_CLIENT_ID"].strip(),
+              client_secret=os.environ["YT_CLIENT_SECRET"].strip(),
+              scopes=["https://www.googleapis.com/auth/youtube.upload"],
+          )
+          creds.refresh(Request())
+          youtube = build("youtube", "v3", credentials=creds, cache_discovery=False)
+
+          request = youtube.videos().insert(
+              part="snippet,status",
+              body={
+                  "snippet": {
+                      "title": title,
+                      "description": description,
+                      "categoryId": "27",
+                      "defaultLanguage": "ja",
+                      "defaultAudioLanguage": "ja",
+                  },
+                  "status": {"privacyStatus": "private"},
+              },
+              media_body=MediaFileUpload(
+                  videos[0],
+                  mimetype="video/mp4",
+                  chunksize=8 * 1024 * 1024,
+                  resumable=True,
+              ),
+          )
+
+          response = None
+          while response is None:
+              status, response = request.next_chunk()
+              if status is not None:
+                  print(f"YouTube upload: {status.progress() * 100:.1f}%")
+
+          video_id = response.get("id")
+          if not video_id:
+              raise SystemExit(f"YouTube API returned no video id: {response}")
+
+          youtube.thumbnails().set(
+              videoId=video_id,
+              media_body=MediaFileUpload(str(thumb), mimetype="image/jpeg", resumable=False),
+          ).execute()
+
+          Path("dist/youtube_video_id.txt").write_text(video_id + "\n", encoding="utf-8")
+          audience_path = Path(os.environ["QUIZ_AUDIENCE_HISTORY_FILE"])
+          attach_video_id(audience_path, int(os.environ["QUIZ_SEQUENCE"]), video_id)
+          print(f"Uploaded PRIVATE YouTube video id: {video_id}")
+          print(f"Title: {title}")
+          print("Custom thumbnail uploaded successfully.")
+          print("Audience v6 tracking:", model_summary(audience_path))
+          PYCODE
+
+      - name: Record used title, games, thumbnail and audience-learning state
+        working-directory: control
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          # State files were changed by the renderer/analytics learner. Autostash keeps
+          # them safe if the public branch moved during the long render/upload.
+          git pull --rebase --autostash origin "$PUBLIC_REF"
+
+          if ! grep -Fxq "$SELECTED_TITLE" tieudedalay.txt; then
+            printf '%s\n' "$SELECTED_TITLE" >> tieudedalay.txt
+          fi
+
+          git add tieudedalay.txt game_history.json thumb_history.json audience_learning.json
+          if git diff --cached --quiet; then
+            echo "No title/history/learning changes to commit."
+          else
+            git commit -m "Track v6 title, novelty and audience learning"
+            for attempt in 1 2 3; do
+              if git push origin "HEAD:${PUBLIC_REF}"; then
+                exit 0
+              fi
+              echo "Push attempt $attempt failed; rebasing and retrying..."
+              git pull --rebase --autostash origin "$PUBLIC_REF"
+            done
+            echo "::error::Could not persist v6 title/history/learning state after 3 attempts"
+            exit 1
+          fi
+
+      - name: Remove local render files
+        if: always()
+        run: |
+          rm -rf private-source/dist private-source/work
+          echo "Local render files removed."
