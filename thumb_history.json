@@ -4,10 +4,12 @@
   "used_thumbnail_signatures": [
     "40275fa67f1675dfad428a93",
     "6c4fa0764c07cf8b60b601a6",
+    "cc7b120d0d317421b6f5dcf0",
     "df6a93f7f5155a7ba0fd96da",
     "ffacb5f6392f3fbfbef71751"
   ],
   "used_palette_signatures": [
+    "073de3fa271a09e848ca",
     "267650e1a39f8ac9a7a4",
     "2f12bfad96b33b2c12e1",
     "bab983999010e2fe683d",
@@ -69,6 +71,20 @@
       "audience_exploration": 1.0,
       "audience_evidence": 0.0,
       "v6_score": 0.66714
+    },
+    {
+      "signature": "cc7b120d0d317421b6f5dcf0",
+      "video_sequence": 1,
+      "puzzle_signature": "0a8a2eeae8aae347a8155cc8",
+      "grammar": "periodic",
+      "mutation": "span_rotate+confusable_substitute+span_rotate",
+      "layout": 5,
+      "headline": 2,
+      "score": 0.61238,
+      "audience_predicted": 0.5,
+      "audience_exploration": 1.0,
+      "audience_evidence": 0.0,
+      "v6_score": 0.63615
     }
   ],
   "used_palettes": [
@@ -151,6 +167,26 @@
         113
       ],
       "novelty": 0.31602
+    },
+    {
+      "signature": "073de3fa271a09e848ca",
+      "video_sequence": 1,
+      "bg1": [
+        244,
+        192,
+        38
+      ],
+      "bg2": [
+        52,
+        178,
+        20
+      ],
+      "accent": [
+        65,
+        104,
+        233
+      ],
+      "novelty": 0.25598
     }
   ],
   "recent_profiles": [
@@ -177,15 +213,21 @@
       "layout": 4,
       "headline": 1,
       "palette_signature": "267650e1a39f8ac9a7a4"
+    },
+    {
+      "video_sequence": 1,
+      "layout": 5,
+      "headline": 2,
+      "palette_signature": "073de3fa271a09e848ca"
     }
   ],
-  "last_video_sequence": 0,
-  "total_unique_thumbnails": 4,
+  "last_video_sequence": 1,
+  "total_unique_thumbnails": 5,
   "audience_model": {
     "model": "audience-learning-v6",
     "version": 6,
     "learned_videos": 0,
-    "tracked_videos": 3,
+    "tracked_videos": 4,
     "feature_count": 0,
     "thumbnail_feature_count": 0,
     "global_reward_mean": 0.5,
