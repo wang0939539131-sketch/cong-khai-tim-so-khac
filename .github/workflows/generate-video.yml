@@ -1,6 +1,9 @@
 name: Generate TIM-SO-KHAC video and upload to YouTube
 
 on:
+  schedule:
+    - cron: '0 23 * * *'   # 11:00 VN
+    
   workflow_dispatch:
 
 permissions:
