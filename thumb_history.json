@@ -2,6 +2,7 @@
   "version": 6,
   "generator": "qd-audience-v6",
   "used_thumbnail_signatures": [
+    "0df5b949fa3440e041903f05",
     "40275fa67f1675dfad428a93",
     "6c4fa0764c07cf8b60b601a6",
     "cc7b120d0d317421b6f5dcf0",
@@ -11,6 +12,7 @@
   "used_palette_signatures": [
     "073de3fa271a09e848ca",
     "267650e1a39f8ac9a7a4",
+    "29e09d855801045dee39",
     "2f12bfad96b33b2c12e1",
     "bab983999010e2fe683d",
     "e02ed3d04178985b232b"
@@ -85,6 +87,20 @@
       "audience_exploration": 1.0,
       "audience_evidence": 0.0,
       "v6_score": 0.63615
+    },
+    {
+      "signature": "0df5b949fa3440e041903f05",
+      "video_sequence": 2,
+      "puzzle_signature": "7139cfa0917cadde2ac6cd29",
+      "grammar": "sandwich",
+      "mutation": "substitute+confusable_substitute+mirror_break",
+      "layout": 1,
+      "headline": 4,
+      "score": 0.57348,
+      "audience_predicted": 0.5,
+      "audience_exploration": 1.0,
+      "audience_evidence": 0.0,
+      "v6_score": 0.602
     }
   ],
   "used_palettes": [
@@ -187,6 +203,26 @@
         233
       ],
       "novelty": 0.25598
+    },
+    {
+      "signature": "29e09d855801045dee39",
+      "video_sequence": 2,
+      "bg1": [
+        189,
+        75,
+        242
+      ],
+      "bg2": [
+        183,
+        84,
+        66
+      ],
+      "accent": [
+        125,
+        246,
+        69
+      ],
+      "novelty": 0.25169
     }
   ],
   "recent_profiles": [
@@ -219,15 +255,21 @@
       "layout": 5,
       "headline": 2,
       "palette_signature": "073de3fa271a09e848ca"
+    },
+    {
+      "video_sequence": 2,
+      "layout": 1,
+      "headline": 4,
+      "palette_signature": "29e09d855801045dee39"
     }
   ],
-  "last_video_sequence": 1,
-  "total_unique_thumbnails": 5,
+  "last_video_sequence": 2,
+  "total_unique_thumbnails": 6,
   "audience_model": {
     "model": "audience-learning-v6",
     "version": 6,
     "learned_videos": 0,
-    "tracked_videos": 4,
+    "tracked_videos": 5,
     "feature_count": 0,
     "thumbnail_feature_count": 0,
     "global_reward_mean": 0.5,
