@@ -6,6 +6,7 @@
     "40275fa67f1675dfad428a93",
     "6c4fa0764c07cf8b60b601a6",
     "cc7b120d0d317421b6f5dcf0",
+    "d19135a71fa2c210d813d6d2",
     "df6a93f7f5155a7ba0fd96da",
     "ffacb5f6392f3fbfbef71751"
   ],
@@ -14,6 +15,7 @@
     "267650e1a39f8ac9a7a4",
     "29e09d855801045dee39",
     "2f12bfad96b33b2c12e1",
+    "33b5ec1163b7a6ae80ae",
     "bab983999010e2fe683d",
     "e02ed3d04178985b232b"
   ],
@@ -101,6 +103,20 @@
       "audience_exploration": 1.0,
       "audience_evidence": 0.0,
       "v6_score": 0.602
+    },
+    {
+      "signature": "d19135a71fa2c210d813d6d2",
+      "video_sequence": 3,
+      "puzzle_signature": "7ada115b97cb5236644924fb",
+      "grammar": "palindrome",
+      "mutation": "mirror_break+mirror_break+confusable_substitute",
+      "layout": 1,
+      "headline": 3,
+      "score": 0.48549,
+      "audience_predicted": 0.5,
+      "audience_exploration": 1.0,
+      "audience_evidence": 0.0,
+      "v6_score": 0.52476
     }
   ],
   "used_palettes": [
@@ -223,6 +239,26 @@
         69
       ],
       "novelty": 0.25169
+    },
+    {
+      "signature": "33b5ec1163b7a6ae80ae",
+      "video_sequence": 3,
+      "bg1": [
+        163,
+        230,
+        62
+      ],
+      "bg2": [
+        27,
+        235,
+        215
+      ],
+      "accent": [
+        110,
+        27,
+        235
+      ],
+      "novelty": 0.18616
     }
   ],
   "recent_profiles": [
@@ -261,10 +297,16 @@
       "layout": 1,
       "headline": 4,
       "palette_signature": "29e09d855801045dee39"
+    },
+    {
+      "video_sequence": 3,
+      "layout": 1,
+      "headline": 3,
+      "palette_signature": "33b5ec1163b7a6ae80ae"
     }
   ],
-  "last_video_sequence": 2,
-  "total_unique_thumbnails": 6,
+  "last_video_sequence": 3,
+  "total_unique_thumbnails": 7,
   "audience_model": {
     "model": "audience-learning-v6",
     "version": 6,
