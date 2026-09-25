@@ -2,6 +2,7 @@
   "version": 6,
   "generator": "qd-audience-v6",
   "used_thumbnail_signatures": [
+    "09aef28e42a745c89e827fec",
     "0df5b949fa3440e041903f05",
     "40275fa67f1675dfad428a93",
     "6c4fa0764c07cf8b60b601a6",
@@ -18,6 +19,7 @@
     "2f12bfad96b33b2c12e1",
     "33b5ec1163b7a6ae80ae",
     "bab983999010e2fe683d",
+    "db789394ce3a6022370f",
     "e02ed3d04178985b232b",
     "e0e17badff9cffaab067"
   ],
@@ -133,6 +135,20 @@
       "audience_exploration": 1.0,
       "audience_evidence": 0.0,
       "v6_score": 0.51968
+    },
+    {
+      "signature": "09aef28e42a745c89e827fec",
+      "video_sequence": 5,
+      "puzzle_signature": "c3c71c6a43af9fc2056387a1",
+      "grammar": "sandwich",
+      "mutation": "double_substitute",
+      "layout": 0,
+      "headline": 1,
+      "score": 0.47314,
+      "audience_predicted": 0.5,
+      "audience_exploration": 1.0,
+      "audience_evidence": 0.0,
+      "v6_score": 0.51392
     }
   ],
   "used_palettes": [
@@ -295,6 +311,26 @@
         37
       ],
       "novelty": 0.18517
+    },
+    {
+      "signature": "db789394ce3a6022370f",
+      "video_sequence": 5,
+      "bg1": [
+        72,
+        228,
+        70
+      ],
+      "bg2": [
+        73,
+        145,
+        216
+      ],
+      "accent": [
+        241,
+        13,
+        224
+      ],
+      "novelty": 0.17241
     }
   ],
   "recent_profiles": [
@@ -345,10 +381,16 @@
       "layout": 5,
       "headline": 2,
       "palette_signature": "e0e17badff9cffaab067"
+    },
+    {
+      "video_sequence": 5,
+      "layout": 0,
+      "headline": 1,
+      "palette_signature": "db789394ce3a6022370f"
     }
   ],
-  "last_video_sequence": 4,
-  "total_unique_thumbnails": 8,
+  "last_video_sequence": 5,
+  "total_unique_thumbnails": 9,
   "audience_model": {
     "model": "audience-learning-v6",
     "version": 6,
